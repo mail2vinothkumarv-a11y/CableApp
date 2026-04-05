@@ -30,7 +30,7 @@ A **zero-cost, offline-capable Progressive Web App** for managing cable TV or DT
 ### Option A — GitHub Pages (Recommended)
 1. Fork or upload this repo to your GitHub account
 2. Go to **Settings → Pages → Branch: main → Save**
-3. Your app URL: `https://yourusername.github.io/subtrack`
+3. Your app URL: `https://mail2vinothkumarv-a11y.github.io/CableApp`
 4. Open that URL in **Chrome on Android** → tap **⋮ → Add to Home Screen**
 5. App installs like a native Android app ✅
 
