@@ -1,0 +1,17 @@
+{
+  "name": "SubTrack – Subscription Manager",
+  "short_name": "SubTrack",
+  "description": "Cable/DTH subscription management with Google Sheets sync, biometric login, and offline support",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#080d1a",
+  "theme_color": "#0a0f1e",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='36' fill='%230f1628'/><text y='128' x='16' font-size='110'>📡</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

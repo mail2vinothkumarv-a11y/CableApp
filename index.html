@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0f1e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>SubTrack – Subscription Manager</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080d1a;--surface:#0f1628;--card:#141c35;--border:#1e2a4a;
+  --accent:#00d4ff;--green:#00e676;--red:#ff4444;--amber:#ffb300;
+  --text:#e8edf8;--muted:#5a6a8a;--accent2:#ff6b35;
+  --admin-clr:#c084fc;--user-clr:#00d4ff;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+
+/* ── LOCK SCREEN ── */
+#lockScreen{position:fixed;inset:0;z-index:1000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;overflow-y:auto}
+#lockScreen.hidden{display:none}
+.lock-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.9rem;letter-spacing:-1px;margin-bottom:5px}
+.lock-logo span{color:var(--accent)}
+.lock-sub{font-size:.75rem;color:var(--muted);margin-bottom:36px}
+.lock-icon{font-size:3rem;margin-bottom:20px;animation:pulse 2s infinite}
+.lock-form{width:100%;max-width:320px}
+.lock-role-row{display:flex;gap:8px;margin-bottom:13px}
+.lock-role-opt{flex:1;padding:10px;border:1px solid var(--border);border-radius:10px;text-align:center;font-size:.8rem;font-weight:600;cursor:pointer;color:var(--muted);transition:all .2s}
+.lock-role-opt.sel-admin{border-color:var(--admin-clr);color:var(--admin-clr);background:rgba(192,132,252,.1)}
+.lock-role-opt.sel-user{border-color:var(--user-clr);color:var(--user-clr);background:rgba(0,212,255,.1)}
+.lock-field{position:relative;margin-bottom:11px}
+.lock-field input{width:100%;padding:13px 42px 13px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:.88rem;outline:none;transition:border-color .2s;font-family:'DM Sans',sans-serif}
+.lock-field input:focus{border-color:var(--accent)}
+.eye{position:absolute;right:13px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:1rem;user-select:none}
+.lock-btn{width:100%;padding:13px;background:linear-gradient(135deg,#00d4ff,#0099bb);border:none;border-radius:12px;color:#000;font-family:'Syne',sans-serif;font-size:.9rem;font-weight:800;letter-spacing:1px;cursor:pointer;margin-bottom:9px;transition:all .2s}
+.lock-btn:active{transform:scale(.97)}
+.bio-btn{width:100%;padding:11px;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:.82rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px}
+.bio-btn:hover{border-color:var(--accent);color:var(--accent)}
+.lock-err{color:var(--red);font-size:.76rem;text-align:center;margin-top:7px;min-height:18px}
+.lock-hint{font-size:.68rem;color:var(--muted);text-align:center;margin-top:14px;line-height:1.6;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.12);border-radius:8px;padding:9px}
+.lock-link{font-size:.72rem;color:var(--accent);text-align:center;margin-top:10px;cursor:pointer;text-decoration:underline}
+
+/* ── HEADER ── */
+header{position:sticky;top:0;z-index:100;background:rgba(8,13,26,.93);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;letter-spacing:-.5px}
+.logo span{color:var(--accent)}
+.hdr-right{display:flex;align-items:center;gap:7px}
+.role-pill{font-size:.6rem;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:.5px;text-transform:uppercase}
+.role-pill.admin{background:rgba(192,132,252,.15);color:var(--admin-clr);border:1px solid rgba(192,132,252,.3)}
+.role-pill.user{background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.2)}
+.icon-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.85rem;transition:all .2s}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── TABS ── */
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:52px;z-index:90}
+.tab{flex:1;padding:10px 4px;text-align:center;font-size:.62rem;font-weight:600;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;position:relative}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.pending-count{position:absolute;top:5px;right:calc(50% - 18px);background:var(--red);color:#fff;font-size:.5rem;font-weight:700;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+
+/* ── VIEWS ── */
+.view{display:none;padding:12px;position:relative;z-index:1;padding-bottom:24px}
+.view.active{display:block}
+
+/* ── DASHBOARD FILTER BAR ── */
+.filter-bar{display:flex;gap:7px;margin-bottom:12px;align-items:center}
+.filter-bar .search-wrap{flex:1;margin-bottom:0}
+.view-toggle{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.vt-btn{padding:7px 10px;font-size:.65rem;font-weight:600;cursor:pointer;color:var(--muted);border:none;background:transparent;transition:all .2s;white-space:nowrap}
+.vt-btn.active{background:var(--accent);color:#000}
+
+/* ── SEARCH ── */
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap input{width:100%;padding:10px 12px 10px 34px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.84rem;outline:none;transition:border-color .2s}
+.search-wrap input:focus{border-color:var(--accent)}
+.search-wrap::before{content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:.76rem}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:13px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 8px;text-align:center;animation:fadeUp .4s ease both}
+.stat-card .num{font-family:'DM Mono',monospace;font-size:1.3rem;font-weight:500;margin-bottom:2px}
+.stat-card .lbl{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.s1 .num{color:var(--accent)}.s2 .num{color:var(--green)}.s3 .num{color:var(--accent2)}
+
+/* ── TODAY BANNER ── */
+.today-banner{background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.2);border-radius:10px;padding:8px 12px;margin-bottom:11px;font-size:.72rem;color:var(--green);display:flex;align-items:center;gap:6px}
+
+/* ── SECTION LABEL ── */
+.section-label{font-family:'Syne',sans-serif;font-size:.64rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+
+/* ── SUBSCRIBER CARDS ── */
+.sub-card{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:12px;margin-bottom:8px;transition:all .2s;animation:fadeUp .3s ease both;position:relative;overflow:hidden}
+.sub-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;background:var(--green)}
+.sub-card.inactive::before{background:var(--red)}
+.sub-card.pending-card::before{background:var(--amber)}
+.sub-card.unpaid::before{background:var(--accent2)}
+.sub-card.paid-today::before{background:var(--green)}
+.sub-card.paid-today{border-color:rgba(0,230,118,.3)}
+.sub-card:active{transform:scale(.985)}
+.sub-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px}
+.sub-box{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--accent);background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);padding:2px 6px;border-radius:5px}
+.sub-badges{display:flex;gap:4px;flex-wrap:wrap}
+.badge{font-size:.56rem;font-weight:600;padding:2px 6px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px}
+.badge.active-b{background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.25)}
+.badge.inactive-b{background:rgba(255,68,68,.12);color:var(--red);border:1px solid rgba(255,68,68,.25)}
+.badge.paid-b{background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.25)}
+.badge.unpaid-b{background:rgba(255,107,53,.12);color:var(--accent2);border:1px solid rgba(255,107,53,.25)}
+.badge.pending-b{background:rgba(255,179,0,.12);color:var(--amber);border:1px solid rgba(255,179,0,.3)}
+.badge.today-b{background:rgba(0,230,118,.2);color:var(--green);border:1px solid rgba(0,230,118,.4)}
+.sub-name{font-weight:600;font-size:.88rem;margin-bottom:2px}
+.sub-addr{font-size:.71rem;color:var(--muted)}
+.sub-area{font-size:.66rem;color:var(--accent);font-family:'DM Mono',monospace;background:rgba(0,212,255,.06);padding:1px 6px;border-radius:4px;display:inline-block;margin-top:2px}
+.sub-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:7px;padding-top:7px;border-top:1px solid var(--border)}
+.sub-amount{font-family:'DM Mono',monospace;font-size:.88rem;font-weight:500}
+.sub-actions{display:flex;gap:5px}
+.action-btn{font-size:.62rem;font-weight:600;padding:5px 8px;border-radius:7px;border:1px solid;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.3px;background:transparent}
+.btn-pay{border-color:var(--green);color:var(--green)}.btn-pay:active{background:rgba(0,230,118,.12)}
+.btn-complaint{border-color:var(--accent2);color:var(--accent2)}
+.btn-edit{border-color:var(--muted);color:var(--muted)}
+.btn-approve{border-color:var(--amber);color:var(--amber)}
+
+/* ── MONTH PILLS ── */
+.month-pills{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
+.mpill{font-size:.56rem;font-weight:600;padding:2px 6px;border-radius:12px;font-family:'DM Mono',monospace}
+.mpill.mp-paid{background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.25)}
+.mpill.mp-unpaid{background:rgba(255,107,53,.08);color:var(--accent2);border:1px solid rgba(255,107,53,.2)}
+
+/* ── FORM ── */
+.form-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;animation:fadeUp .3s ease both}
+.form-card h3{font-family:'Syne',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.field{margin-bottom:11px;position:relative}
+.field label{display:block;font-size:.66rem;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:11px 12px;background:var(--surface);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.84rem;outline:none;transition:border-color .2s;appearance:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,.07)}
+.field input:disabled,.field select:disabled{opacity:.45;cursor:not-allowed}
+.field textarea{resize:none;min-height:70px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* ── AUTOCOMPLETE ── */
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--accent);border-radius:10px;z-index:200;max-height:155px;overflow-y:auto;box-shadow:0 8px 28px rgba(0,0,0,.4);margin-top:3px}
+.autocomplete-item{padding:9px 11px;cursor:pointer;border-bottom:1px solid var(--border);font-size:.8rem;transition:background .15s}
+.autocomplete-item:last-child{border-bottom:none}
+.autocomplete-item:hover,.autocomplete-item.highlighted{background:rgba(0,212,255,.1)}
+.box-tag{font-family:'DM Mono',monospace;font-size:.66rem;color:var(--accent);margin-right:6px}
+
+/* ── TOGGLE ── */
+.toggle-row{display:flex;gap:6px}
+.toggle-opt{flex:1;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);text-align:center;cursor:pointer;font-size:.76rem;font-weight:600;transition:all .2s}
+.toggle-opt.sel-green{border-color:var(--green);color:var(--green);background:rgba(0,230,118,.1)}
+.toggle-opt.sel-red{border-color:var(--red);color:var(--red);background:rgba(255,68,68,.1)}
+
+/* ── MONTH GRID ── */
+.month-legend{display:flex;gap:11px;font-size:.63rem;color:var(--muted);margin-bottom:7px;flex-wrap:wrap}
+.month-legend span{display:flex;align-items:center;gap:3px}
+.leg-dot{width:7px;height:7px;border-radius:50%}
+.month-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.month-btn{padding:9px 3px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:.68rem;font-weight:600;cursor:pointer;text-align:center;transition:all .2s;position:relative}
+/* PAID: green, locked — users cannot change these */
+.month-btn.m-paid{border-color:rgba(0,230,118,.5);color:var(--green);background:rgba(0,230,118,.1);cursor:not-allowed}
+.month-btn.m-paid::after{content:'✓';position:absolute;top:2px;right:4px;font-size:.48rem;color:var(--green)}
+/* Current month auto-selected (blue) */
+.month-btn.m-selected{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.1)}
+/* Future: greyed */
+.month-btn.m-future{opacity:.3;cursor:not-allowed}
+
+/* ── BUTTONS ── */
+.pay-btn{width:100%;padding:13px;border:none;border-radius:11px;font-family:'Syne',sans-serif;font-size:.88rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;margin-top:7px}
+.pay-btn:active{transform:scale(.97)}
+.pay-btn.blue{background:linear-gradient(135deg,#00d4ff,#0099bb);color:#000;box-shadow:0 4px 16px rgba(0,212,255,.25)}
+.pay-btn.green{background:linear-gradient(135deg,#00e676,#00a852);color:#000;box-shadow:0 4px 16px rgba(0,230,118,.25)}
+.pay-btn.orange{background:linear-gradient(135deg,#ff6b35,#cc4000);color:#fff}
+.pay-btn.purple{background:linear-gradient(135deg,#c084fc,#9333ea);color:#fff}
+.pay-btn.ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+
+/* ── BANNERS ── */
+.info-banner{border-radius:9px;padding:9px 11px;margin-bottom:10px;font-size:.74rem;line-height:1.6}
+.info-banner.warn{background:rgba(255,179,0,.07);border:1px solid rgba(255,179,0,.25);color:var(--amber)}
+.info-banner.info{background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.18);color:var(--accent)}
+
+/* ── APPROVAL CARDS ── */
+.approval-card{background:rgba(255,179,0,.06);border:1px solid rgba(255,179,0,.25);border-radius:12px;padding:13px;margin-bottom:8px;animation:fadeUp .3s ease both}
+.approval-card .who{font-weight:600;font-size:.86rem}
+.approval-card .detail{font-size:.71rem;color:var(--muted);margin-top:3px;line-height:1.5}
+.approval-actions{display:flex;gap:7px;margin-top:9px}
+.appr-btn{flex:1;padding:8px;border-radius:8px;font-size:.74rem;font-weight:600;cursor:pointer;border:1px solid;transition:all .2s}
+.appr-approve{border-color:var(--green);color:var(--green);background:rgba(0,230,118,.07)}
+.appr-reject{border-color:var(--red);color:var(--red);background:rgba(255,68,68,.07)}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);z-index:300;display:none;align-items:flex-end}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:20px;width:100%;max-height:90vh;overflow-y:auto;animation:slideUp .3s ease}
+.modal-handle{width:34px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.modal h2{font-family:'Syne',sans-serif;font-size:.97rem;font-weight:800;margin-bottom:3px}
+.modal .sub-info{font-size:.76rem;color:var(--muted);margin-bottom:15px}
+.recorder-area{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:12px;margin-bottom:10px}
+.recorder-controls{display:flex;gap:9px;align-items:center}
+.rec-btn{width:46px;height:46px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;font-size:1.1rem;cursor:pointer;transition:all .2s}
+.rec-btn.record{background:var(--red);box-shadow:0 0 14px rgba(255,68,68,.35)}
+.rec-btn.stop{background:var(--surface);border:2px solid var(--border)}
+.rec-status{font-size:.74rem;color:var(--muted)}
+.rec-status.recording{color:var(--red);animation:blink 1s infinite}
+.recordings-list{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.recording-item{display:flex;align-items:center;gap:7px;padding:8px;background:var(--card);border:1px solid var(--border);border-radius:8px}
+.recording-item audio{flex:1;height:27px}
+
+/* ── SETTINGS ── */
+.settings-group{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.settings-row{padding:11px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.settings-row:last-child{border-bottom:none}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);color:var(--text);padding:9px 16px;border-radius:50px;font-size:.78rem;z-index:500;white-space:nowrap;animation:toastIn .25s ease;box-shadow:0 6px 24px rgba(0,0,0,.4)}
+.toast.success{border-color:var(--green);color:var(--green)}
+.toast.error{border-color:var(--red);color:var(--red)}
+.toast.warn{border-color:var(--amber);color:var(--amber)}
+
+.empty-state{text-align:center;padding:34px 14px;color:var(--muted);font-size:.82rem}
+.empty-state .icon{font-size:2.3rem;margin-bottom:8px}
+select option{background:#141c35}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes blink{50%{opacity:.4}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ LOCK SCREEN ══════════════ -->
+<div id="lockScreen">
+  <div class="lock-logo">Sub<span>Track</span></div>
+  <div class="lock-sub">Subscription Management System</div>
+  <div class="lock-icon">🔐</div>
+  <div class="lock-form">
+    <div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;text-align:center">Sign in as</div>
+    <div class="lock-role-row">
+      <div class="lock-role-opt sel-admin" id="roleAdmin" onclick="selectLoginRole('admin')">🛡️ Admin</div>
+      <div class="lock-role-opt" id="roleUser" onclick="selectLoginRole('user')">👤 User</div>
+    </div>
+    <div class="lock-field">
+      <input type="text" id="loginUser" placeholder="Username" autocomplete="username">
+    </div>
+    <div class="lock-field">
+      <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      <span class="eye" onclick="togglePwd('loginPass',this)">👁</span>
+    </div>
+    <button class="lock-btn" onclick="doLogin()">🔓 Unlock</button>
+    <button class="bio-btn" id="bioBtn" onclick="doBiometric()">
+      <span id="bioIcon">🔑</span><span id="bioLabel">Use Fingerprint / Face ID</span>
+    </button>
+    <div class="lock-err" id="loginErr"></div>
+    <div class="lock-hint">
+      <strong>Default credentials</strong><br>
+      Admin: <code>admin</code> / <code>admin123</code> &nbsp;·&nbsp; User: <code>user1</code> / <code>user123</code>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MAIN APP ══════════════ -->
+<div id="mainApp" style="display:none">
+
+<header>
+  <div class="logo">Sub<span>Track</span></div>
+  <div class="hdr-right">
+    <span class="role-pill admin" id="rolePill">Admin</span>
+    <button class="icon-btn" onclick="syncFromSheets()" title="Sync">🔄</button>
+    <button class="icon-btn" onclick="doLogout()" title="Lock">🔒</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" id="tab-btn-dashboard" onclick="showTab('dashboard')">📋 Home</div>
+  <div class="tab" id="tab-btn-add" onclick="showTab('add')">➕ Add</div>
+  <div class="tab" id="tab-btn-approvals" onclick="showTab('approvals')" style="position:relative">
+    ✅ Approve<span class="pending-count" id="pendingCount" style="display:none">0</span>
+  </div>
+  <div class="tab" id="tab-btn-settings" onclick="showTab('settings')">⚙️ Setup</div>
+</div>
+
+<!-- ═══ DASHBOARD ═══ -->
+<div class="view active" id="tab-dashboard">
+  <div class="stats-row">
+    <div class="stat-card s1"><div class="num" id="stat-total">0</div><div class="lbl">Total</div></div>
+    <div class="stat-card s2"><div class="num" id="stat-paid">0</div><div class="lbl">Paid Today</div></div>
+    <div class="stat-card s3"><div class="num" id="stat-unpaid">0</div><div class="lbl">Pending</div></div>
+  </div>
+
+  <!-- TODAY BANNER -->
+  <div class="today-banner" id="todayBanner">
+    ✅ Showing customers who paid <strong id="todayDateLabel">today</strong>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <div class="search-wrap" style="flex:1;margin-bottom:0">
+      <input type="text" id="dashSearch" placeholder="Search name or box ID…" oninput="renderDashboard()">
+    </div>
+    <div class="view-toggle">
+      <button class="vt-btn active" id="vt-today" onclick="setView('today')">Today</button>
+      <button class="vt-btn" id="vt-all" onclick="setView('all')">All</button>
+    </div>
+  </div>
+
+  <!-- AREA FILTER (Gugai / Karungalpatti / All) -->
+  <div style="display:flex;gap:6px;margin-bottom:11px;flex-wrap:wrap">
+    <button class="vt-btn active" id="af-all"     onclick="setArea('all')"            style="border:1px solid var(--border);border-radius:8px;padding:6px 10px">All Areas</button>
+    <button class="vt-btn"        id="af-gugai"    onclick="setArea('Gugai')"          style="border:1px solid var(--border);border-radius:8px;padding:6px 10px">Gugai</button>
+    <button class="vt-btn"        id="af-karung"   onclick="setArea('Karungalpatti')"  style="border:1px solid var(--border);border-radius:8px;padding:6px 10px">Karungalpatti</button>
+    <button class="vt-btn"        id="af-other"    onclick="setArea('Other')"          style="border:1px solid var(--border);border-radius:8px;padding:6px 10px">Other</button>
+  </div>
+
+  <div class="section-label" id="listLabel">Today's Payments</div>
+  <div id="subList"></div>
+</div>
+
+<!-- ═══ ADD / EDIT ═══ -->
+<div class="view" id="tab-add">
+  <div id="sheetsWarning" class="info-banner warn" style="display:none">⚠️ <strong>Sheets not configured.</strong> Go to Setup → paste Script URL.</div>
+  <div id="pendingNotice" class="info-banner warn" style="display:none">⏳ Pending admin approval — fields are read-only.</div>
+
+  <div class="form-card">
+    <h3>Subscriber Details</h3>
+    <div class="field" id="boxFieldWrap">
+      <label>Setup Box ID</label>
+      <input type="text" id="f-box" placeholder="Type box ID or name…" autocomplete="off" oninput="handleBoxInput(this)" onkeydown="handleBoxKey(event)">
+      <div class="autocomplete-list" id="boxDropdown" style="display:none"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Name</label><input type="text" id="f-name" placeholder="Full name"></div>
+      <div class="field"><label>Amount (₹)</label><input type="number" id="f-amount" placeholder="0"></div>
+    </div>
+    <div class="field"><label>Address</label><input type="text" id="f-address" placeholder="Door no, Street"></div>
+    <!-- NEW: Area field -->
+    <div class="field">
+      <label>Area / Location</label>
+      <select id="f-area">
+        <option value="">— Select Area —</option>
+        <option value="Gugai">Gugai</option>
+        <option value="Karungalpatti">Karungalpatti</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <h3>Subscription Details</h3>
+    <div class="field">
+      <label>Status</label>
+      <div class="toggle-row">
+        <div class="toggle-opt sel-green" id="opt-active"   onclick="handleStatusChange('active')">✅ Active</div>
+        <div class="toggle-opt"           id="opt-inactive" onclick="handleStatusChange('inactive')">❌ Inactive</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Subscription Months</label>
+      <div class="month-legend">
+        <span><span class="leg-dot" style="background:var(--green)"></span>Paid</span>
+        <span><span class="leg-dot" style="background:var(--accent)"></span>Current (to pay)</span>
+        <span><span class="leg-dot" style="background:var(--muted)"></span>Not selected</span>
+      </div>
+      <div class="month-grid" id="monthGrid"></div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:6px">🔒 Paid months are locked. Current month is auto-selected.</div>
+    </div>
+  </div>
+
+  <input type="hidden" id="f-editId">
+  <div id="formActions">
+    <button class="pay-btn green"  onclick="saveSubscriber()">💾 Save Subscriber</button>
+    <button class="pay-btn blue"   onclick="markPaid()">💳 Mark PAID → Sync Sheets</button>
+    <button class="pay-btn ghost"  onclick="clearForm()" style="margin-top:7px">Clear Form</button>
+  </div>
+</div>
+
+<!-- ═══ APPROVALS ═══ -->
+<div class="view" id="tab-approvals">
+  <div class="section-label">Pending Approvals</div>
+  <div id="approvalList"></div>
+</div>
+
+<!-- ═══ SETTINGS ═══ -->
+<div class="view" id="tab-settings">
+  <div id="settingsLocked" class="info-banner warn" style="display:none">🔒 Settings restricted to Admin.</div>
+  <div id="settingsContent">
+
+    <!-- Google Sheets -->
+    <div class="form-card">
+      <h3>Google Sheets Integration</h3>
+      <div class="field"><label>Apps Script Web App URL</label><input type="text" id="cfg-scriptUrl" placeholder="https://script.google.com/macros/s/…/exec"></div>
+      <div class="field"><label>Subscribers Sheet Tab</label><input type="text" id="cfg-sheetName" placeholder="Subscribers"></div>
+      <div class="field"><label>Complaints Sheet Tab</label><input type="text" id="cfg-complaintSheet" placeholder="Complaints"></div>
+      <div class="info-banner info" style="margin-top:4px">Extensions → Apps Script → paste Code.gs → Deploy → Web App → Anyone → copy URL above.</div>
+      <button class="pay-btn blue" onclick="saveConfig()">💾 Save Config</button>
+    </div>
+
+    <!-- Accounts -->
+    <div class="form-card">
+      <h3>App Accounts</h3>
+      <div class="settings-group" id="accountList"></div>
+      <button class="pay-btn ghost" style="margin-top:8px" onclick="openModal('addAccountModal')">➕ Add Account</button>
+    </div>
+
+    <!-- Change Password -->
+    <div class="form-card">
+      <h3>Change My Password</h3>
+      <div class="field"><label>Current Password</label>
+        <div class="lock-field" style="position:relative">
+          <input type="password" id="cp-old" placeholder="Current password" style="width:100%;padding:11px 40px 11px 12px;background:var(--surface);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:.84rem;outline:none">
+          <span class="eye" onclick="togglePwd('cp-old',this)">👁</span>
+        </div>
+      </div>
+      <div class="field"><label>New Password</label>
+        <div class="lock-field" style="position:relative">
+          <input type="password" id="cp-new" placeholder="New password" style="width:100%;padding:11px 40px 11px 12px;background:var(--surface);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:.84rem;outline:none">
+          <span class="eye" onclick="togglePwd('cp-new',this)">👁</span>
+        </div>
+      </div>
+      <div class="field"><label>Confirm New Password</label>
+        <div class="lock-field" style="position:relative">
+          <input type="password" id="cp-confirm" placeholder="Confirm new password" style="width:100%;padding:11px 40px 11px 12px;background:var(--surface);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:.84rem;outline:none">
+          <span class="eye" onclick="togglePwd('cp-confirm',this)">👁</span>
+        </div>
+      </div>
+      <button class="pay-btn purple" onclick="changePassword()">🔑 Change Password</button>
+    </div>
+
+    <!-- Predefined List -->
+    <div class="form-card">
+      <h3>Predefined Autocomplete List</h3>
+      <div style="font-size:.71rem;color:var(--muted);margin-bottom:8px">Edit the PREDEFINED array in the source to customise.</div>
+      <div id="predefinedList"></div>
+      <button class="pay-btn ghost" style="margin-top:8px" onclick="exportData()">📤 Export JSON</button>
+    </div>
+
+    <!-- Apps Script Code -->
+    <div class="form-card">
+      <h3>Google Apps Script (Code.gs)</h3>
+      <pre style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:.61rem;color:#9ab;overflow-x:auto;white-space:pre-wrap;line-height:1.5" id="scriptCode"></pre>
+      <button class="pay-btn ghost" style="margin-top:7px" onclick="copyScript()">📋 Copy Code</button>
+    </div>
+  </div>
+</div>
+</div><!-- /mainApp -->
+
+<!-- ═══ COMPLAINT MODAL ═══ -->
+<div class="modal-overlay" id="complaintModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>📣 Raise Complaint</h2>
+    <div class="sub-info" id="complaintSubInfo">—</div>
+    <div class="recorder-area">
+      <div style="font-size:.66rem;color:var(--muted);margin-bottom:7px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">🎙 Voice Note</div>
+      <div class="recorder-controls">
+        <button class="rec-btn record" id="recBtn" onclick="toggleRecord()">🎙</button>
+        <div>
+          <div class="rec-status" id="recStatus">Tap to record</div>
+          <div style="font-size:.64rem;color:var(--muted)" id="recTimer">00:00</div>
+        </div>
+      </div>
+      <div class="recordings-list" id="recordingsList"></div>
+    </div>
+    <div class="field"><label>Written Description</label><textarea id="complaintText" placeholder="Describe the issue…"></textarea></div>
+    <button class="pay-btn orange" onclick="submitComplaint()">📤 Submit Complaint to Sheets</button>
+    <button class="pay-btn ghost" style="margin-top:7px" onclick="closeModal('complaintModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- ═══ ADD ACCOUNT MODAL ═══ -->
+<div class="modal-overlay" id="addAccountModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>➕ Create Account</h2>
+    <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px">Add credentials for a team member.</div>
+    <div class="field"><label>Username</label><input type="text" id="na-user" placeholder="e.g. collector1"></div>
+    <div class="lock-field" style="margin-bottom:12px;position:relative">
+      <input type="password" id="na-pass" placeholder="Password" style="width:100%;padding:11px 40px 11px 12px;background:var(--surface);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:.84rem;outline:none;font-family:'DM Sans',sans-serif">
+      <span class="eye" onclick="togglePwd('na-pass',this)">👁</span>
+    </div>
+    <div class="field">
+      <label>Role</label>
+      <div class="toggle-row">
+        <div class="toggle-opt" id="na-role-admin" onclick="setNewRole('admin')" style="color:var(--admin-clr)">🛡️ Admin</div>
+        <div class="toggle-opt sel-green" id="na-role-user" onclick="setNewRole('user')">👤 User</div>
+      </div>
+    </div>
+    <button class="pay-btn blue" onclick="createAccount()">✅ Create Account</button>
+    <button class="pay-btn ghost" style="margin-top:7px" onclick="closeModal('addAccountModal')">Cancel</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const AREAS  = ['Gugai','Karungalpatti','Other'];
+
+// Predefined subscriber list — edit to match real data
+let PREDEFINED = [
+  {box:'BOX-001',name:'Ramesh Kumar',  address:'12, Anna Nagar',        area:'Gugai'},
+  {box:'BOX-002',name:'Priya Rajan',   address:'45, Gandhi St',         area:'Karungalpatti'},
+  {box:'BOX-003',name:'Suresh Babu',   address:'7, MG Road',            area:'Gugai'},
+  {box:'BOX-004',name:'Lakshmi Devi',  address:'23, Nehru Nagar',       area:'Karungalpatti'},
+  {box:'BOX-005',name:'Muthu Vel',     address:'88, Beach Road',        area:'Other'},
+  {box:'BOX-006',name:'Kavitha S',     address:'3, Venkatesh St',       area:'Gugai'},
+  {box:'BOX-007',name:'Arjun Raj',     address:'56, Lotus Colony',      area:'Karungalpatti'},
+  {box:'BOX-008',name:'Meena T',       address:'11, Kamaraj Ave',       area:'Other'},
+  {box:'BOX-009',name:'Senthil K',     address:'29, SH Road',           area:'Gugai'},
+  {box:'BOX-010',name:'Divya M',       address:'67, West St',           area:'Karungalpatti'},
+];
+
+const DEFAULT_ACCS = [
+  {id:'acc_admin',username:'admin', ph:btoa('admin123'),role:'admin'},
+  {id:'acc_u1',   username:'user1', ph:btoa('user123'), role:'user'},
+];
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let subscribers      = JSON.parse(localStorage.getItem('st_data')      || '[]');
+let config           = JSON.parse(localStorage.getItem('st_cfg')       || '{}');
+let accounts         = JSON.parse(localStorage.getItem('st_accs')      || 'null') || DEFAULT_ACCS;
+let pendingApprovals = JSON.parse(localStorage.getItem('st_approvals') || '[]');
+
+let currentUser   = null;
+let loginRole     = 'admin';
+let currentStatus = 'active';
+let selectedMonths= [];
+let paidMonths    = [];
+let complaintId   = null;
+let mediaRecorder = null;
+let audioChunks   = [];
+let recordings    = [];
+let recInterval   = null;
+let recSecs       = 0;
+let acHighlight   = -1;
+let acFiltered    = [];
+let newRole       = 'user';
+let bioAvailable  = false;
+let dashView      = 'today';   // 'today' | 'all'
+let dashArea      = 'all';     // 'all' | 'Gugai' | 'Karungalpatti' | 'Other'
+
+const TODAY_STR = new Date().toDateString(); // e.g. "Mon Apr 05 2026"
+
+// ═══════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════
+window.onload = async () => {
+  initAccounts();
+  buildMonthGrid();
+  renderScriptCode();
+  await detectBiometric();
+};
+
+// ═══════════════════════════════════════════════════
+// BIOMETRIC
+// ═══════════════════════════════════════════════════
+async function detectBiometric() {
+  try {
+    if (window.PublicKeyCredential)
+      bioAvailable = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  } catch(e) { bioAvailable = false; }
+  document.getElementById('bioLabel').textContent = bioAvailable
+    ? 'Use Fingerprint / Face ID' : 'Use Device Screen Lock';
+  document.getElementById('bioIcon').textContent = bioAvailable ? '🔑' : '📱';
+}
+
+async function doBiometric() {
+  const stored = localStorage.getItem('st_bio');
+  if (!stored) { showLockErr('Log in with password first — biometric available next visit.'); return; }
+  const bio = JSON.parse(stored);
+  try {
+    if (bioAvailable && bio.credId) {
+      const a = await navigator.credentials.get({
+        publicKey:{
+          challenge:crypto.getRandomValues(new Uint8Array(32)),
+          allowCredentials:[{id:Uint8Array.from(atob(bio.credId),c=>c.charCodeAt(0)),type:'public-key'}],
+          userVerification:'required', timeout:60000
+        }
+      });
+      if (a) { unlockAs(bio.username, bio.role); return; }
+    }
+  } catch(e) {}
+  try {
+    const cred = await navigator.credentials.get({password:true,mediation:'optional'});
+    if (cred) {
+      const acc = accounts.find(a=>a.username===cred.id && a.ph===btoa(cred.password));
+      if (acc) { unlockAs(acc.username,acc.role); return; }
+    }
+  } catch(e2) {}
+  showLockErr('Biometric failed — use password.');
+}
+
+async function tryRegisterBiometric(acc) {
+  if (!bioAvailable || localStorage.getItem('st_bio')) return;
+  try {
+    const cred = await navigator.credentials.create({
+      publicKey:{
+        challenge:crypto.getRandomValues(new Uint8Array(32)),
+        rp:{name:'SubTrack',id:location.hostname||'localhost'},
+        user:{id:new TextEncoder().encode(acc.id),name:acc.username,displayName:acc.username},
+        pubKeyCredParams:[{alg:-7,type:'public-key'}],
+        authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'},
+        timeout:60000
+      }
+    });
+    if (cred) {
+      const credId = btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
+      localStorage.setItem('st_bio',JSON.stringify({username:acc.username,role:acc.role,credId}));
+      showToast('🔑 Biometric registered!','success');
+    }
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════
+function selectLoginRole(r) {
+  loginRole = r;
+  document.getElementById('roleAdmin').className = 'lock-role-opt'+(r==='admin'?' sel-admin':'');
+  document.getElementById('roleUser').className  = 'lock-role-opt'+(r==='user' ?' sel-user':'');
+}
+
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  if (!u||!p) { showLockErr('Enter username and password'); return; }
+  const acc = accounts.find(a=>a.username===u && a.ph===btoa(p) && a.role===loginRole);
+  if (!acc) { showLockErr('Invalid credentials or wrong role selected'); return; }
+  tryRegisterBiometric(acc);
+  unlockAs(acc.username, acc.role);
+}
+
+function unlockAs(username, role) {
+  currentUser = {username, role};
+  document.getElementById('lockScreen').classList.add('hidden');
+  document.getElementById('mainApp').style.display = 'block';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginErr').textContent = '';
+  const pill = document.getElementById('rolePill');
+  pill.className = 'role-pill '+role;
+  pill.textContent = role==='admin' ? '🛡 Admin' : '👤 '+username;
+  applyRoleUI();
+  renderDashboard();
+  renderApprovals();
+  updateBadge();
+  loadConfig();
+  showTab('dashboard');
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('lockScreen').classList.remove('hidden');
+  document.getElementById('mainApp').style.display = 'none';
+}
+
+function showLockErr(m) { document.getElementById('loginErr').textContent = m; }
+
+function applyRoleUI() {
+  const isAdmin = currentUser?.role==='admin';
+  document.getElementById('tab-btn-approvals').style.display = isAdmin?'':'none';
+  document.getElementById('tab-btn-settings').style.display  = isAdmin?'':'none';
+}
+
+// ── CHANGE PASSWORD ──
+function changePassword() {
+  const oldP    = document.getElementById('cp-old').value;
+  const newP    = document.getElementById('cp-new').value;
+  const confirm = document.getElementById('cp-confirm').value;
+  if (!oldP||!newP||!confirm) { showToast('Fill all password fields','error'); return; }
+  if (newP !== confirm) { showToast('New passwords do not match','error'); return; }
+  if (newP.length < 6)  { showToast('Password must be at least 6 characters','error'); return; }
+  const acc = accounts.find(a=>a.username===currentUser.username);
+  if (!acc || acc.ph !== btoa(oldP)) { showToast('Current password is incorrect','error'); return; }
+  acc.ph = btoa(newP);
+  saveAccounts();
+  // Clear biometric so next login re-registers with new password
+  localStorage.removeItem('st_bio');
+  document.getElementById('cp-old').value='';
+  document.getElementById('cp-new').value='';
+  document.getElementById('cp-confirm').value='';
+  showToast('✅ Password changed! Please log in again.','success');
+  setTimeout(doLogout, 1800);
+}
+
+// ═══════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════
+function showTab(name) {
+  if ((name==='settings'||name==='approvals') && currentUser?.role!=='admin') {
+    showToast('Admin access required','error'); return;
+  }
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name)?.classList.add('active');
+  document.getElementById('tab-btn-'+name)?.classList.add('active');
+  if (name==='settings') {
+    const ia = currentUser?.role==='admin';
+    document.getElementById('settingsLocked').style.display  = ia?'none':'block';
+    document.getElementById('settingsContent').style.display = ia?'block':'none';
+    if (ia) { renderPredefinedList(); renderAccountList(); }
+  }
+  if (name==='approvals') renderApprovals();
+  if (name==='dashboard') renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════
+// DASHBOARD VIEW / AREA FILTERS
+// ═══════════════════════════════════════════════════
+function setView(v) {
+  dashView = v;
+  document.getElementById('vt-today').classList.toggle('active', v==='today');
+  document.getElementById('vt-all').classList.toggle('active',   v==='all');
+  document.getElementById('todayBanner').style.display = v==='today'?'flex':'none';
+  renderDashboard();
+}
+
+function setArea(a) {
+  dashArea = a;
+  ['all','gugai','karung','other'].forEach(id=>document.getElementById('af-'+id)?.classList.remove('active'));
+  const map = {all:'af-all',Gugai:'af-gugai',Karungalpatti:'af-karung',Other:'af-other'};
+  document.getElementById(map[a]||'af-all')?.classList.add('active');
+  renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════
+// MONTH GRID
+// ═══════════════════════════════════════════════════
+function buildMonthGrid() {
+  const grid = document.getElementById('monthGrid');
+  grid.innerHTML = '';
+  MONTHS.forEach((m,i)=>{
+    const btn = document.createElement('button');
+    btn.textContent = m;
+    btn.dataset.idx = i;
+    btn.className = 'month-btn';
+    // Users: paid months locked, only current month selectable
+    // Admin: paid months locked, others can be toggled
+    btn.onclick = ()=>toggleMonth(i);
+    grid.appendChild(btn);
+  });
+}
+
+function refreshMonthGrid() {
+  const now = new Date().getMonth();
+  const isAdmin = currentUser?.role==='admin';
+  document.querySelectorAll('.month-btn').forEach(btn=>{
+    const i = parseInt(btn.dataset.idx);
+    btn.className = 'month-btn';
+    btn.disabled = false;
+
+    if (paidMonths.includes(i)) {
+      // Paid months: always locked for everyone
+      btn.classList.add('m-paid');
+      btn.disabled = true;
+      return;
+    }
+    if (i > now) {
+      btn.classList.add('m-future');
+      btn.disabled = true;
+      return;
+    }
+    // Current month highlighted if selected
+    if (selectedMonths.includes(i)) btn.classList.add('m-selected');
+
+    // Users can only toggle current month; admin can toggle any past month
+    if (!isAdmin && i !== now) {
+      btn.disabled = true;
+      btn.style.opacity = '0.35';
+      btn.style.cursor = 'not-allowed';
+    }
+  });
+}
+
+function toggleMonth(i) {
+  const now = new Date().getMonth();
+  const isAdmin = currentUser?.role==='admin';
+  if (paidMonths.includes(i)) { showToast('This month is already paid','warn'); return; }
+  if (i > now) { showToast('Cannot select future months','warn'); return; }
+  if (!isAdmin && i !== now) { showToast('You can only select the current month','warn'); return; }
+  const pos = selectedMonths.indexOf(i);
+  if (pos===-1) selectedMonths.push(i); else selectedMonths.splice(pos,1);
+  refreshMonthGrid();
+}
+
+// Auto-select: for payment, always pre-select current month if not paid
+function autoSelectForPayment(sub) {
+  paidMonths = [...(sub?.paidMonths||[])];
+  const now = new Date().getMonth();
+  // Always start with paid months, then add current if not paid
+  selectedMonths = [...paidMonths];
+  if (!paidMonths.includes(now)) selectedMonths.push(now);
+  refreshMonthGrid();
+}
+
+// Admin edit: auto-select all unpaid up to current
+function autoSelectUnpaid(sub) {
+  paidMonths = [...(sub?.paidMonths||[])];
+  const now = new Date().getMonth();
+  selectedMonths = [...paidMonths];
+  for (let i=0;i<=now;i++) {
+    if (!selectedMonths.includes(i)) selectedMonths.push(i);
+  }
+  refreshMonthGrid();
+}
+
+function handleStatusChange(s) {
+  currentStatus = s;
+  document.getElementById('opt-active').className   = 'toggle-opt'+(s==='active' ?' sel-green':'');
+  document.getElementById('opt-inactive').className = 'toggle-opt'+(s==='inactive'?' sel-red':'');
+  if (s==='inactive') {
+    selectedMonths = [...paidMonths];
+    refreshMonthGrid();
+    if (currentUser?.role!=='admin') showToast('Deactivation needs admin approval','warn');
+  }
+}
+
+function selectStatus(s) { handleStatusChange(s); }
+
+// ═══════════════════════════════════════════════════
+// AUTOCOMPLETE — searches name AND box ID
+// ═══════════════════════════════════════════════════
+function handleBoxInput(inp) {
+  const q = inp.value.trim().toLowerCase();
+  acHighlight = -1;
+  if (!q) { hideAC(); return; }
+  acFiltered = PREDEFINED.filter(p=>
+    p.box.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)
+  );
+  if (!acFiltered.length) { hideAC(); return; }
+  const dd = document.getElementById('boxDropdown');
+  dd.innerHTML='';
+  acFiltered.forEach((p,i)=>{
+    const d = document.createElement('div');
+    d.className = 'autocomplete-item';
+    d.innerHTML = `<span class="box-tag">${p.box}</span>${p.name} <span style="color:var(--muted);font-size:.66rem">— ${p.address} [${p.area}]</span>`;
+    d.onmousedown = ()=>pickAC(p);
+    dd.appendChild(d);
+  });
+  dd.style.display='block';
+}
+function handleBoxKey(e) {
+  const items=document.querySelectorAll('.autocomplete-item');
+  if(e.key==='ArrowDown'){acHighlight=Math.min(acHighlight+1,items.length-1);hlAC(items);e.preventDefault()}
+  else if(e.key==='ArrowUp'){acHighlight=Math.max(acHighlight-1,0);hlAC(items);e.preventDefault()}
+  else if(e.key==='Enter'&&acHighlight>=0){pickAC(acFiltered[acHighlight]);e.preventDefault()}
+  else if(e.key==='Escape')hideAC();
+}
+function hlAC(items){items.forEach((it,i)=>it.classList.toggle('highlighted',i===acHighlight))}
+function pickAC(p) {
+  document.getElementById('f-box').value    = p.box;
+  document.getElementById('f-name').value   = p.name;
+  document.getElementById('f-address').value= p.address;
+  document.getElementById('f-area').value   = p.area||'';
+  hideAC();
+  const ex = subscribers.find(s=>s.box===p.box);
+  if (ex) {
+    document.getElementById('f-editId').value = ex.id;
+    document.getElementById('f-amount').value = ex.amount;
+    selectStatus(ex.status);
+    const isAdmin = currentUser?.role==='admin';
+    if (isAdmin) autoSelectUnpaid(ex); else autoSelectForPayment(ex);
+  } else {
+    paidMonths=[];
+    const now=new Date().getMonth();
+    selectedMonths=[now];
+    refreshMonthGrid();
+  }
+}
+function hideAC(){document.getElementById('boxDropdown').style.display='none'}
+document.addEventListener('click',e=>{if(!e.target.closest('#boxFieldWrap'))hideAC()});
+
+// ═══════════════════════════════════════════════════
+// SAVE SUBSCRIBER
+// ═══════════════════════════════════════════════════
+function saveSubscriber() {
+  const isAdmin  = currentUser?.role==='admin';
+  const box      = document.getElementById('f-box').value.trim();
+  const name     = document.getElementById('f-name').value.trim();
+  const address  = document.getElementById('f-address').value.trim();
+  const area     = document.getElementById('f-area').value;
+  const amount   = parseFloat(document.getElementById('f-amount').value)||0;
+  if (!box||!name) { showToast('Box ID and Name required','error'); return; }
+
+  const editId = document.getElementById('f-editId').value;
+  const ex     = editId ? subscribers.find(s=>s.id===editId) : null;
+  const wasActive     = ex?.status==='active';
+  const goingInactive = currentStatus==='inactive';
+  const needsApproval = !isAdmin && goingInactive && wasActive;
+
+  const sub = {
+    id:             editId || Date.now().toString(),
+    box, name, address, area, amount,
+    status:         currentStatus,
+    months:         [...selectedMonths],
+    paidMonths:     ex?.paidMonths || [],
+    paid:           ex?.paid || false,
+    complaints:     ex?.complaints || [],
+    approvalStatus: ex?.approvalStatus || (isAdmin?'approved':'pending'),
+    updatedAt:      new Date().toISOString(),
+    createdAt:      ex?.createdAt || new Date().toISOString()
+  };
+
+  if (!editId) {
+    sub.approvalStatus = isAdmin ? 'approved' : 'pending';
+    subscribers.push(sub);
+    persist();
+    if (!isAdmin) {
+      queueApproval({type:'new',subId:sub.id,subName:sub.name,subBox:sub.box,requestedBy:currentUser.username});
+      showToast('✅ Submitted — awaiting admin approval','warn');
+    } else {
+      showToast('✅ Subscriber added!','success');
+    }
+  } else {
+    if (needsApproval) {
+      sub.approvalStatus = 'pending-inactive';
+      sub.months = [...paidMonths];
+      queueApproval({type:'deactivate',subId:sub.id,subName:sub.name,subBox:sub.box,requestedBy:currentUser.username});
+      showToast('⏳ Deactivation request sent to admin','warn');
+    } else {
+      showToast('✅ Updated!','success');
+    }
+    const idx = subscribers.findIndex(s=>s.id===editId);
+    if (idx!==-1) subscribers[idx]=sub;
+    persist();
+  }
+  updateBadge();
+  clearForm();
+  showTab('dashboard');
+}
+
+// ═══════════════════════════════════════════════════
+// MARK PAID — always uses current month, records datePaid
+// ═══════════════════════════════════════════════════
+async function markPaid() {
+  const box   = document.getElementById('f-box').value.trim();
+  const name  = document.getElementById('f-name').value.trim();
+  if (!box||!name) { showToast('Fill subscriber details first','error'); return; }
+
+  const now = new Date().getMonth();
+  // Only the current month (or admin-selected months) get paid
+  const newlyPaid = selectedMonths.filter(m=>!paidMonths.includes(m));
+  if (!newlyPaid.length) { showToast('Current month is already paid','warn'); return; }
+
+  const editId = document.getElementById('f-editId').value;
+  let sub = editId ? subscribers.find(s=>s.id===editId) : null;
+  if (!sub) {
+    const tmpSub = {
+      id:Date.now().toString(), box, name,
+      address:document.getElementById('f-address').value.trim(),
+      area:document.getElementById('f-area').value,
+      amount:parseFloat(document.getElementById('f-amount').value)||0,
+      status:currentStatus, months:[...selectedMonths], paidMonths:[],
+      paid:false, complaints:[],
+      approvalStatus:currentUser?.role==='admin'?'approved':'pending',
+      updatedAt:new Date().toISOString(), createdAt:new Date().toISOString()
+    };
+    subscribers.push(tmpSub);
+    sub = tmpSub;
+  }
+
+  const datePaid = new Date().toISOString(); // exact timestamp
+  sub.paidMonths = [...new Set([...(sub.paidMonths||[]),...newlyPaid])];
+  sub.paid       = true;
+  sub.paidAt     = datePaid;           // ISO timestamp of payment
+  sub.paidDateStr= new Date().toDateString(); // for "today" filter
+  sub.months     = [...selectedMonths];
+  sub.updatedAt  = datePaid;
+  persist();
+  renderDashboard();
+  showToast('💳 Syncing payment…');
+  if (config.scriptUrl) {
+    try { await pushToSheets(sub,newlyPaid,datePaid); showToast('✅ Synced to Google Sheets!','success'); }
+    catch(e) { showToast('⚠️ Local saved. Sheets sync failed','error'); }
+  } else {
+    showToast('✅ Marked paid locally!','success');
+  }
+  clearForm();
+  showTab('dashboard');
+}
+
+// ═══════════════════════════════════════════════════
+// QUICK PAY FROM CARD — auto-selects current month
+// ═══════════════════════════════════════════════════
+async function quickPay(id,e) {
+  e.stopPropagation();
+  const sub = subscribers.find(s=>s.id===id);
+  if (!sub) return;
+  const now = new Date().getMonth();
+  if ((sub.paidMonths||[]).includes(now)) {
+    showToast(`${MONTHS[now]} already paid ✓`,'warn'); return;
+  }
+  const datePaid = new Date().toISOString();
+  sub.paidMonths = [...new Set([...(sub.paidMonths||[]),now])];
+  sub.paid       = true;
+  sub.paidAt     = datePaid;
+  sub.paidDateStr= new Date().toDateString();
+  sub.updatedAt  = datePaid;
+  persist();
+  renderDashboard();
+  showToast(`✅ ${MONTHS[now]} marked Paid!`,'success');
+  if (config.scriptUrl) { try { await pushToSheets(sub,[now],datePaid); } catch(e) {} }
+}
+
+// ═══════════════════════════════════════════════════
+// EDIT SUBSCRIBER
+// ═══════════════════════════════════════════════════
+function editSub(id,e) {
+  e?.stopPropagation();
+  const sub = subscribers.find(s=>s.id===id);
+  if (!sub) return;
+  document.getElementById('f-editId').value   = sub.id;
+  document.getElementById('f-box').value      = sub.box;
+  document.getElementById('f-name').value     = sub.name;
+  document.getElementById('f-address').value  = sub.address;
+  document.getElementById('f-amount').value   = sub.amount;
+  document.getElementById('f-area').value     = sub.area||'';
+  selectStatus(sub.status);
+  const isAdmin = currentUser?.role==='admin';
+  if (isAdmin) autoSelectUnpaid(sub); else autoSelectForPayment(sub);
+  const isPending = sub.approvalStatus==='pending'||sub.approvalStatus==='pending-inactive';
+  document.getElementById('pendingNotice').style.display = isPending?'block':'none';
+  ['f-box','f-name','f-address','f-amount','f-area'].forEach(id=>document.getElementById(id).disabled=isPending);
+  document.getElementById('formActions').style.opacity = isPending?'0.4':'';
+  document.getElementById('formActions').style.pointerEvents = isPending?'none':'';
+  showTab('add');
+}
+
+function clearForm() {
+  document.getElementById('f-editId').value='';
+  ['f-box','f-name','f-address','f-amount'].forEach(id=>{
+    const el=document.getElementById(id); el.value=''; el.disabled=false;
+  });
+  document.getElementById('f-area').value='';
+  document.getElementById('f-area').disabled=false;
+  document.getElementById('pendingNotice').style.display='none';
+  document.getElementById('formActions').style.opacity='';
+  document.getElementById('formActions').style.pointerEvents='';
+  paidMonths=[]; selectedMonths=[];
+  // Default: select current month
+  const now = new Date().getMonth();
+  selectedMonths=[now];
+  selectStatus('active');
+  refreshMonthGrid();
+}
+
+// ═══════════════════════════════════════════════════
+// APPROVALS
+// ═══════════════════════════════════════════════════
+function queueApproval(req) {
+  req.id = Date.now().toString();
+  req.timestamp = new Date().toISOString();
+  pendingApprovals.push(req);
+  localStorage.setItem('st_approvals',JSON.stringify(pendingApprovals));
+  updateBadge();
+}
+
+function updateBadge() {
+  const n = pendingApprovals.length;
+  const el = document.getElementById('pendingCount');
+  el.style.display = (n>0 && currentUser?.role==='admin')?'flex':'none';
+  el.textContent = n;
+}
+
+function renderApprovals() {
+  const list = document.getElementById('approvalList');
+  if (!pendingApprovals.length) {
+    list.innerHTML=`<div class="empty-state"><div class="icon">✅</div>No pending approvals</div>`; return;
+  }
+  list.innerHTML='';
+  pendingApprovals.forEach(req=>{
+    const card=document.createElement('div');
+    card.className='approval-card';
+    card.innerHTML=`
+      <div class="who">${req.type==='new'?'🆕 New Subscriber':'❌ Deactivation Request'}</div>
+      <div class="detail"><strong>${req.subName}</strong> (${req.subBox})<br>
+        By <em>${req.requestedBy}</em> · ${new Date(req.timestamp).toLocaleString()}</div>
+      <div class="approval-actions">
+        <button class="appr-btn appr-approve" onclick="resolveApproval('${req.id}','approve')">✅ Approve</button>
+        <button class="appr-btn appr-reject"  onclick="resolveApproval('${req.id}','reject')">❌ Reject</button>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+function resolveApproval(reqId,decision) {
+  const idx = pendingApprovals.findIndex(r=>r.id===reqId);
+  if (idx===-1) return;
+  const req = pendingApprovals[idx];
+  const sub = subscribers.find(s=>s.id===req.subId);
+  if (decision==='approve') {
+    if (sub) {
+      if (req.type==='new')        { sub.approvalStatus='approved'; sub.status='active'; }
+      if (req.type==='deactivate') { sub.approvalStatus='approved'; sub.status='inactive'; sub.months=[...(sub.paidMonths||[])]; }
+    }
+    showToast('✅ Approved!','success');
+  } else {
+    if (sub) {
+      if (req.type==='new')        subscribers.splice(subscribers.indexOf(sub),1);
+      if (req.type==='deactivate') { sub.approvalStatus='approved'; sub.status='active'; }
+    }
+    showToast('❌ Rejected','error');
+  }
+  persist();
+  pendingApprovals.splice(idx,1);
+  localStorage.setItem('st_approvals',JSON.stringify(pendingApprovals));
+  updateBadge(); renderApprovals(); renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════
+// DASHBOARD — default shows today's paid customers
+// ═══════════════════════════════════════════════════
+function renderDashboard() {
+  const q = (document.getElementById('dashSearch')?.value||'').toLowerCase();
+
+  // Stats (all approved)
+  const approved = subscribers.filter(s=>s.approvalStatus==='approved');
+  const paidToday = approved.filter(s=>s.paidDateStr===TODAY_STR);
+  document.getElementById('stat-total').textContent  = approved.length;
+  document.getElementById('stat-paid').textContent   = paidToday.length;
+  document.getElementById('stat-unpaid').textContent = approved.filter(s=>!s.paid).length;
+
+  // Update today date label
+  document.getElementById('todayDateLabel').textContent =
+    new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+
+  let list = [...subscribers];
+
+  // View filter
+  if (dashView==='today') {
+    list = list.filter(s=>s.paidDateStr===TODAY_STR);
+  }
+
+  // Area filter
+  if (dashArea!=='all') {
+    list = list.filter(s=>s.area===dashArea);
+  }
+
+  // Search: name OR box ID
+  if (q) {
+    list = list.filter(s=>
+      s.name.toLowerCase().includes(q) || s.box.toLowerCase().includes(q)
+    );
+  }
+
+  // Section label
+  const lbl = dashView==='today'
+    ? `Today's Payments (${list.length})`
+    : `All Subscribers (${list.length})`;
+  document.getElementById('listLabel').textContent = lbl;
+
+  const subList = document.getElementById('subList');
+  if (!list.length) {
+    subList.innerHTML = dashView==='today'
+      ? `<div class="empty-state"><div class="icon">🌅</div>No payments recorded today yet</div>`
+      : `<div class="empty-state"><div class="icon">📭</div>No subscribers found</div>`;
+    return;
+  }
+
+  const isAdmin = currentUser?.role==='admin';
+  // Sort: pending first, then today's payments, then unpaid
+  list.sort((a,b)=>{
+    const ap=a.approvalStatus==='pending'||a.approvalStatus==='pending-inactive';
+    const bp=b.approvalStatus==='pending'||b.approvalStatus==='pending-inactive';
+    if(ap&&!bp)return -1; if(!ap&&bp)return 1;
+    const at=a.paidDateStr===TODAY_STR, bt=b.paidDateStr===TODAY_STR;
+    if(at&&!bt)return -1; if(!at&&bt)return 1;
+    return 0;
+  });
+
+  subList.innerHTML='';
+  list.forEach((s,i)=>{
+    const isPending = s.approvalStatus==='pending'||s.approvalStatus==='pending-inactive';
+    const isToday   = s.paidDateStr===TODAY_STR;
+    let cls = 'sub-card';
+    if (isPending) cls+=' pending-card';
+    else if (isToday) cls+=' paid-today';
+    else if (s.status==='inactive') cls+=' inactive';
+    else if (!s.paid) cls+=' unpaid';
+
+    const pm  = s.paidMonths||[];
+    const sm  = s.months||[];
+    const allM = [...new Set([...pm,...sm])].sort((a,b)=>a-b);
+    const pillsHtml = allM.length
+      ? `<div class="month-pills">${allM.map(m=>`
+          <span class="mpill ${pm.includes(m)?'mp-paid':'mp-unpaid'}">${MONTHS[m]}${pm.includes(m)?'✓':''}</span>
+        `).join('')}</div>`
+      : '';
+
+    const statusBadge = isPending
+      ? `<span class="badge pending-b">⏳ Pending</span>`
+      : `<span class="badge ${s.status==='active'?'active-b':'inactive-b'}">${s.status}</span>`;
+    const paidBadge = isToday
+      ? `<span class="badge today-b">✅ Paid Today</span>`
+      : `<span class="badge ${s.paid?'paid-b':'unpaid-b'}">${s.paid?'Paid':'Unpaid'}</span>`;
+    const areaTag = s.area ? `<span class="sub-area">${s.area}</span>` : '';
+
+    const payBtn    = isAdmin&&!isPending&&!isToday
+      ? `<button class="action-btn btn-pay" onclick="quickPay('${s.id}',event)">💳</button>` : '';
+    const editBtn   = isAdmin
+      ? `<button class="action-btn btn-edit" onclick="editSub('${s.id}',event)">✏️</button>` : '';
+    const reviewBtn = isAdmin&&isPending
+      ? `<button class="action-btn btn-approve" onclick="showTab('approvals')">⏳</button>` : '';
+
+    // Show paidAt time if paid today
+    const paidTimeStr = isToday && s.paidAt
+      ? `<div style="font-size:.62rem;color:var(--green)">💳 ${new Date(s.paidAt).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>`
+      : '';
+
+    const el = document.createElement('div');
+    el.className=cls; el.style.animationDelay=(i*.04)+'s';
+    el.innerHTML=`
+      <div class="sub-top">
+        <div class="sub-box">${s.box}</div>
+        <div class="sub-badges">${statusBadge}${paidBadge}</div>
+      </div>
+      <div class="sub-name">${s.name}</div>
+      <div class="sub-addr">📍 ${s.address||'—'}</div>
+      ${areaTag}
+      ${pillsHtml}
+      <div class="sub-bottom">
+        <div>
+          <div class="sub-amount">₹${(s.amount||0).toLocaleString()}</div>
+          ${paidTimeStr}
+          <div style="font-size:.62rem;color:var(--muted)">${s.complaints?.length?`📣 ${s.complaints.length} complaint(s)`:''}</div>
+        </div>
+        <div class="sub-actions">
+          ${reviewBtn}${payBtn}
+          <button class="action-btn btn-complaint" onclick="openComplaint('${s.id}',event)">📣</button>
+          ${editBtn}
+        </div>
+      </div>`;
+    subList.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// COMPLAINT / VOICE — records to separate Sheets tab
+// ═══════════════════════════════════════════════════
+function openComplaint(id,e) {
+  e?.stopPropagation();
+  complaintId=id;
+  const sub=subscribers.find(s=>s.id===id);
+  document.getElementById('complaintSubInfo').textContent=`Box: ${sub?.box} | ${sub?.name} | ${sub?.area||''}`;
+  document.getElementById('complaintText').value='';
+  recordings=[];
+  document.getElementById('recordingsList').innerHTML='';
+  document.getElementById('recStatus').textContent='Tap to record';
+  document.getElementById('recStatus').className='rec-status';
+  document.getElementById('recTimer').textContent='00:00';
+  document.getElementById('recBtn').textContent='🎙';
+  document.getElementById('recBtn').className='rec-btn record';
+  openModal('complaintModal');
+}
+
+async function toggleRecord() {
+  if (mediaRecorder&&mediaRecorder.state==='recording') {
+    mediaRecorder.stop(); clearInterval(recInterval);
+    document.getElementById('recStatus').textContent='Saved ✓';
+    document.getElementById('recStatus').className='rec-status';
+    document.getElementById('recBtn').textContent='🎙';
+    document.getElementById('recBtn').className='rec-btn record';
+    return;
+  }
+  try {
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    mediaRecorder=new MediaRecorder(stream);
+    audioChunks=[];
+    mediaRecorder.ondataavailable=e=>audioChunks.push(e.data);
+    mediaRecorder.onstop=()=>{
+      const blob=new Blob(audioChunks,{type:'audio/webm'});
+      const url=URL.createObjectURL(blob);
+      recordings.push({blob,url});
+      const item=document.createElement('div');
+      item.className='recording-item';
+      item.innerHTML=`<span style="font-size:.66rem;color:var(--muted)">#${recordings.length}</span><audio controls src="${url}"></audio>`;
+      document.getElementById('recordingsList').appendChild(item);
+      stream.getTracks().forEach(t=>t.stop());
+    };
+    mediaRecorder.start(); recSecs=0;
+    document.getElementById('recStatus').textContent='Recording…';
+    document.getElementById('recStatus').className='rec-status recording';
+    document.getElementById('recBtn').textContent='⏹';
+    document.getElementById('recBtn').className='rec-btn stop';
+    recInterval=setInterval(()=>{
+      recSecs++;
+      document.getElementById('recTimer').textContent=
+        `${String(Math.floor(recSecs/60)).padStart(2,'0')}:${String(recSecs%60).padStart(2,'0')}`;
+    },1000);
+  } catch(err){showToast('Microphone access denied','error')}
+}
+
+async function submitComplaint() {
+  const sub=subscribers.find(s=>s.id===complaintId);
+  if(!sub)return;
+  if(!sub.complaints)sub.complaints=[];
+  const complaint={
+    id:Date.now(),
+    text:document.getElementById('complaintText').value.trim(),
+    audioCount:recordings.length,
+    timestamp:new Date().toISOString(),
+    raisedBy:currentUser?.username
+  };
+  sub.complaints.push(complaint);
+  persist();
+
+  // Push complaint to separate Sheets tab
+  if (config.scriptUrl) {
+    try {
+      await pushComplaintToSheets(sub, complaint);
+      showToast(`📣 Complaint recorded & synced to Sheets`,'success');
+    } catch(e) {
+      showToast(`📣 Complaint #${sub.complaints.length} saved locally`,'warn');
+    }
+  } else {
+    showToast(`📣 Complaint #${sub.complaints.length} recorded`,'success');
+  }
+  closeModal('complaintModal');
+  renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════
+// ACCOUNTS
+// ═══════════════════════════════════════════════════
+function initAccounts() {
+  if(!localStorage.getItem('st_accs')) saveAccounts();
+  else accounts=JSON.parse(localStorage.getItem('st_accs'));
+}
+function saveAccounts(){localStorage.setItem('st_accs',JSON.stringify(accounts))}
+
+function renderAccountList() {
+  document.getElementById('accountList').innerHTML=accounts.map(a=>`
+    <div class="settings-row">
+      <div>
+        <div style="font-size:.83rem;font-weight:500">👤 ${a.username}</div>
+        <div style="font-size:.68rem;color:var(--muted)">${a.role==='admin'?'🛡️ Admin':'User'}</div>
+      </div>
+      ${a.username!=='admin'
+        ?`<button onclick="deleteAccount('${a.id}')" style="background:transparent;border:1px solid var(--border);border-radius:7px;padding:5px 9px;color:var(--red);font-size:.68rem;cursor:pointer">Remove</button>`
+        :'<span style="font-size:.66rem;color:var(--muted)">Protected</span>'}
+    </div>`).join('');
+}
+
+function setNewRole(r) {
+  newRole=r;
+  document.getElementById('na-role-admin').className='toggle-opt'+(r==='admin'?' sel-green':'');
+  document.getElementById('na-role-user').className ='toggle-opt'+(r==='user' ?' sel-green':'');
+}
+
+function createAccount() {
+  const u=document.getElementById('na-user').value.trim();
+  const p=document.getElementById('na-pass').value;
+  if(!u||!p){showToast('Fill all fields','error');return}
+  if(accounts.find(a=>a.username===u)){showToast('Username already exists','error');return}
+  accounts.push({id:'acc_'+Date.now(),username:u,ph:btoa(p),role:newRole});
+  saveAccounts(); renderAccountList(); closeModal('addAccountModal');
+  document.getElementById('na-user').value='';
+  document.getElementById('na-pass').value='';
+  showToast('✅ Account created!','success');
+}
+
+function deleteAccount(id) {
+  accounts=accounts.filter(a=>a.id!==id);
+  saveAccounts(); renderAccountList();
+  showToast('Account removed','success');
+}
+
+// ═══════════════════════════════════════════════════
+// CONFIG & GOOGLE SHEETS
+// ═══════════════════════════════════════════════════
+function saveConfig() {
+  config.scriptUrl      = document.getElementById('cfg-scriptUrl').value.trim();
+  config.sheetName      = document.getElementById('cfg-sheetName').value.trim()||'Subscribers';
+  config.complaintSheet = document.getElementById('cfg-complaintSheet').value.trim()||'Complaints';
+  localStorage.setItem('st_cfg',JSON.stringify(config));
+  document.getElementById('sheetsWarning').style.display=config.scriptUrl?'none':'block';
+  showToast('✅ Config saved!','success');
+}
+
+function loadConfig() {
+  if(config.scriptUrl)      document.getElementById('cfg-scriptUrl').value=config.scriptUrl;
+  if(config.sheetName)      document.getElementById('cfg-sheetName').value=config.sheetName;
+  if(config.complaintSheet) document.getElementById('cfg-complaintSheet').value=config.complaintSheet;
+  document.getElementById('sheetsWarning').style.display=config.scriptUrl?'none':'block';
+}
+
+// Push subscriber payment to Sheets — includes datePaid timestamp
+async function pushToSheets(sub, newlyPaidMonths, datePaid) {
+  const payload={action:'upsert',data:{
+    id:        sub.id,
+    box:       sub.box,
+    name:      sub.name,
+    address:   sub.address,
+    area:      sub.area||'',
+    amount:    sub.amount,
+    status:    sub.status,
+    months:    (sub.months||[]).map(m=>MONTHS[m]).join(', '),
+    paidMonths:(sub.paidMonths||[]).map(m=>MONTHS[m]).join(', '),
+    newlyPaid: newlyPaidMonths.map(m=>MONTHS[m]).join(', '),
+    paid:      sub.paid?'YES':'NO',
+    datePaid:  datePaid ? new Date(datePaid).toLocaleString('en-IN') : '',  // human-readable date
+    paidAt:    datePaid||'',
+    updatedAt: sub.updatedAt,
+    sheet:     config.sheetName||'Subscribers'
+  }};
+  const r=await fetch(config.scriptUrl,{method:'POST',body:JSON.stringify(payload)});
+  const j=await r.json();
+  if(j.status!=='ok') throw new Error(j.message);
+}
+
+// Push complaint to separate Complaints sheet tab
+async function pushComplaintToSheets(sub, complaint) {
+  const payload={action:'complaint',data:{
+    complaintId: complaint.id.toString(),
+    subId:       sub.id,
+    box:         sub.box,
+    name:        sub.name,
+    area:        sub.area||'',
+    text:        complaint.text,
+    audioCount:  complaint.audioCount,
+    raisedBy:    complaint.raisedBy,
+    timestamp:   new Date(complaint.timestamp).toLocaleString('en-IN'),
+    sheet:       config.complaintSheet||'Complaints'
+  }};
+  const r=await fetch(config.scriptUrl,{method:'POST',body:JSON.stringify(payload)});
+  const j=await r.json();
+  if(j.status!=='ok') throw new Error(j.message);
+}
+
+async function syncFromSheets() {
+  if(!config.scriptUrl){showToast('Configure Sheets URL in Setup first','error');return}
+  showToast('🔄 Syncing…');
+  try {
+    const r=await fetch(config.scriptUrl+'?action=getAll&sheet='+(config.sheetName||'Subscribers'));
+    const j=await r.json();
+    if(j.status==='ok'&&j.data){
+      j.data.forEach(row=>{
+        const idx=subscribers.findIndex(s=>s.id===row.id);
+        const sub={
+          id:row.id,box:row.box,name:row.name,address:row.address,area:row.area||'',
+          amount:parseFloat(row.amount)||0,status:row.status,
+          paid:row.paid==='YES',
+          paidAt:row.paidAt||'',
+          paidDateStr:row.paidAt?new Date(row.paidAt).toDateString():'',
+          months:(row.months||'').split(',').map(m=>MONTHS.indexOf(m.trim())).filter(i=>i>=0),
+          paidMonths:(row.paidMonths||'').split(',').map(m=>MONTHS.indexOf(m.trim())).filter(i=>i>=0),
+          updatedAt:row.updatedAt,approvalStatus:'approved',
+          complaints:idx>=0?subscribers[idx].complaints:[]
+        };
+        if(idx!==-1)subscribers[idx]=sub; else subscribers.push(sub);
+      });
+      persist(); renderDashboard(); showToast('✅ Sync complete!','success');
+    }
+  } catch(e){showToast('❌ Sync failed: '+e.message,'error')}
+}
+
+// ═══════════════════════════════════════════════════
+// PREDEFINED LIST & EXPORT
+// ═══════════════════════════════════════════════════
+function renderPredefinedList() {
+  document.getElementById('predefinedList').innerHTML=PREDEFINED.map(p=>`
+    <div style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:.72rem;margin-bottom:5px">
+      <span style="color:var(--accent);font-family:'DM Mono',monospace">${p.box}</span>
+      <span>${p.name}</span>
+      <span style="color:var(--accent2);font-size:.62rem">[${p.area}]</span>
+      <span style="color:var(--muted);font-size:.64rem;margin-left:auto">${p.address.substring(0,18)}…</span>
+    </div>`).join('');
+}
+
+function exportData() {
+  const blob=new Blob([JSON.stringify({subscribers,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`subtrack_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════
+// APPS SCRIPT CODE — handles both sheets + complaints
+// ═══════════════════════════════════════════════════
+function renderScriptCode() {
+  document.getElementById('scriptCode').textContent =
+`// SubTrack — Google Apps Script (Code.gs)
+// Handles: Subscribers sheet + Complaints sheet
+
+function doPost(e) {
+  const data = JSON.parse(e.postData.contents);
+  if (data.action === 'upsert')     return upsertSubscriber(data.data);
+  if (data.action === 'complaint')  return appendComplaint(data.data);
+  return resp({ status: 'error', message: 'Unknown action' });
+}
+
+function doGet(e) {
+  if (e.parameter.action === 'getAll') return getAllRows(e.parameter.sheet || 'Subscribers');
+  return resp({ status: 'error' });
+}
+
+// ── SUBSCRIBERS ──
+function upsertSubscriber(row) {
+  const sh = getOrCreateSheet(row.sheet || 'Subscribers');
+  const headers = ['id','box','name','address','area','amount','status',
+                   'months','paidMonths','newlyPaid','paid','datePaid','paidAt','updatedAt'];
+  ensureHeaders(sh, headers);
+  const data = sh.getDataRange().getValues();
+  const ids  = data.map(r => r[0]);
+  const idx  = ids.indexOf(row.id);
+  const vals = headers.map(h => row[h] !== undefined ? row[h] : '');
+  if (idx > 0) sh.getRange(idx+1, 1, 1, vals.length).setValues([vals]);
+  else         sh.appendRow(vals);
+  return resp({ status: 'ok' });
+}
+
+// ── COMPLAINTS ──
+function appendComplaint(row) {
+  const sh = getOrCreateSheet(row.sheet || 'Complaints');
+  const headers = ['complaintId','subId','box','name','area','text',
+                   'audioCount','raisedBy','timestamp'];
+  ensureHeaders(sh, headers);
+  sh.appendRow(headers.map(h => row[h] !== undefined ? row[h] : ''));
+  return resp({ status: 'ok' });
+}
+
+// ── GET ALL ──
+function getAllRows(sheetName) {
+  const sh   = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  if (!sh) return resp({ status: 'ok', data: [] });
+  const data = sh.getDataRange().getValues();
+  if (data.length < 2) return resp({ status: 'ok', data: [] });
+  const headers = data[0];
+  const rows = data.slice(1).map(r => {
+    const obj = {}; headers.forEach((h,i) => obj[h] = r[i]); return obj;
+  });
+  return resp({ status: 'ok', data: rows });
+}
+
+// ── HELPERS ──
+function getOrCreateSheet(name) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  return ss.getSheetByName(name) || ss.insertSheet(name);
+}
+
+function ensureHeaders(sh, headers) {
+  if (sh.getLastRow() === 0) sh.appendRow(headers);
+}
+
+function resp(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+}
+
+function copyScript() {
+  navigator.clipboard.writeText(document.getElementById('scriptCode').textContent);
+  showToast('📋 Copied to clipboard!','success');
+}
+
+// ═══════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════
+function persist(){localStorage.setItem('st_data',JSON.stringify(subscribers))}
+
+function togglePwd(id,el) {
+  const inp=document.getElementById(id);
+  inp.type=inp.type==='password'?'text':'password';
+  el.textContent=inp.type==='password'?'👁':'🙈';
+}
+
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id) {
+  if(id==='complaintModal'&&mediaRecorder&&mediaRecorder.state!=='inactive'){
+    mediaRecorder.stop(); clearInterval(recInterval);
+  }
+  document.getElementById(id).classList.remove('open');
+}
+
+let toastTimer;
+function showToast(msg,type='') {
+  const old=document.querySelector('.toast'); if(old)old.remove();
+  clearTimeout(toastTimer);
+  const t=document.createElement('div');
+  t.className='toast '+type; t.textContent=msg;
+  document.body.appendChild(t);
+  toastTimer=setTimeout(()=>t.remove(),3400);
+}
+
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
